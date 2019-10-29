@@ -3,41 +3,62 @@ const express = require('express')
 const server = express()
 server.use(express.json())
 
-const users = ['Naruto', 'Neji', 'Hinata', 'Kakashi']
+const ninjas = ['Naruto', 'Neji', 'Hinata', 'Kakashi']
 
-server.get('/users', (req, res) => {
-    return res.json(users)
+server.use((req, res, next) => {
+    console.log('A requisição foi chamada')
+    return next()
 })
 
-server.get("/users/:id", (req, res) => {
+function checkNinjaExists(req, res, next){
+    if(!req.body.name){
+        return res.status(400).json({error: 'Ninja name is required'})
+    }
+    return next()
+}
 
-    const {id} = req.params;
+function checkNinjaInArray(req, res, next){
+    const ninja = ninjas[req.params.index]
 
-    res.json({message: `Ninja ${users[id]}!`})
+    if(!ninja){
+        return res.status(400).json({error: 'Ninja doesnt exist'})
+    }
+
+    req.ninja = ninja
+    return next()
+}
+
+
+server.get('/ninjas', (req, res) => {
+    return res.json(ninjas)
 })
 
-server.post('/users', (req, res) => {
+server.get("/ninjas/:index", checkNinjaInArray, (req, res) => {
+
+    res.json({message: `Ninja ${req.ninja}!`})
+})
+
+server.post('/ninjas', checkNinjaExists, (req, res) => {
     const { name } = req.body
-    users.push(name)
+    ninjas.push(name)
 
-    return res.json(users)
+    return res.json(ninjas)
 })
 
-server.put('/users/:index', (req, res) => {
+server.put('/ninjas/:index', checkNinjaInArray, checkNinjaExists, (req, res) => {
     const { index } = req.params
     const { name } = req.body
     
-    users[index] = name
-    return res.json(users)
+    ninjas[index] = name
+    return res.json(ninjas)
 })
 
-server.delete('/users/:index', (req, res) => {
+server.delete('/ninjas/:index', checkNinjaInArray, (req, res) => {
     const { index } = req.params
 
     users.splice(index, 1)
 
-    return res.send();
-    return res.json(users)
+    return res.send()
 })
 
 server.listen(3000)
